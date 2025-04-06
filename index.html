@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>NICT JST 時計</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding-top: 50px;
+      transition: all 0.3s;
+    }
+
+    #clock {
+      font-size: 3em;
+      margin: 30px;
+      color: black;
+    }
+
+    select, button {
+      font-size: 1em;
+      padding: 10px;
+      margin: 10px;
+    }
+
+    /* フルスクリーン時のレイアウト */
+    body.fullscreen {
+      background: white;
+      color: black;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    body.fullscreen #clock {
+      font-size: 8vw;
+      color: black;
+    }
+
+    body.fullscreen.format-hms #clock {
+      font-size: 12vw;
+    }
+
+    body.fullscreen h1,
+    body.fullscreen select,
+    body.fullscreen button,
+    body.fullscreen label {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>NICT JST リアルタイム時計</h1>
+
+  <label for="format">表示形式：</label>
+  <select id="format">
+    <option value="1">YYYY/MM/DD HH:mm:ss</option>
+    <option value="2">YYYY年M月D日 H時m分s秒</option>
+    <option value="3">HH:mm:ss</option>
+  </select>
+
+  <br>
+  <button onclick="enterFullscreen()">フルスクリーン表示</button>
+
+  <div id="clock">--:--:--</div>
+
+  <script>
+    let jstOffset = 0;
+
+    // NICTのJST APIで同期
+    async function syncWithNICT() {
+      try {
+        const res = await fetch('https://ntp-a1.nict.go.jp/cgi-bin/json');
+        const data = await res.json();
+        const serverTime = new Date(data.st).getTime();
+        const localTime = Date.now();
+        jstOffset = serverTime - localTime;
+        console.log("NICT JST同期完了:", new Date(serverTime));
+      } catch (e) {
+        console.error("NICT JST取得失敗:", e);
+        jstOffset = 0;
+      }
+    }
+
+    function pad(n) {
+      return n.toString().padStart(2, '0');
+    }
+
+    function updateClock() {
+      const now = new Date(Date.now() + jstOffset);
+      const format = document.getElementById('format').value;
+      const clock = document.getElementById('clock');
+
+      let text = '';
+
+      if (format === '1') {
+        text = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      } else if (format === '2') {
+        text = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours()}時${now.getMinutes()}分${now.getSeconds()}秒`;
+      } else if (format === '3') {
+        text = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      }
+
+      clock.textContent = text;
+
+      // HH:mm:ss のときはフォント特大
+      document.body.classList.toggle('format-hms', format === '3');
+    }
+
+    function enterFullscreen() {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      document.body.classList.toggle('fullscreen', !!document.fullscreenElement);
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await syncWithNICT(); // JST取得
+      updateClock();
+      setInterval(updateClock, 1000); // 時計更新
+      document.getElementById('format').addEventListener('change', updateClock);
+    });
+  </script>
+</body>
+</html>
