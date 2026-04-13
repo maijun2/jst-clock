@@ -2,137 +2,533 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NICT JST 時計</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>JST Clock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@100;200;300&family=Helvetica+Neue:wght@100;200;300&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 2rem;
+    *, *::before, *::after {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
     }
 
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
+    :root {
+      --glass-bg: rgba(255, 255, 255, 0.18);
+      --glass-border: rgba(255, 255, 255, 0.45);
+      --glass-shadow: rgba(0, 0, 0, 0.12);
+      --text-primary: rgba(255, 255, 255, 0.95);
+      --text-secondary: rgba(255, 255, 255, 0.6);
+      --text-tertiary: rgba(255, 255, 255, 0.4);
+      --accent: rgba(255, 255, 255, 0.25);
+      --btn-bg: rgba(255, 255, 255, 0.15);
+      --btn-hover: rgba(255, 255, 255, 0.25);
+      --btn-active: rgba(255, 255, 255, 0.1);
+      --separator: rgba(255, 255, 255, 0.2);
+      --dot-active: rgba(255, 255, 255, 0.9);
+      --dot-inactive: rgba(255, 255, 255, 0.3);
     }
 
-    #clock {
-      font-size: 3rem;
-      margin: 2rem 0;
-      color: black;
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
     }
 
-    select, button {
-      font-size: 1.2rem;
-      padding: 0.6rem 1rem;
-      margin: 0.5rem;
-    }
-
-    /* フルスクリーン時のレイアウト */
-    body.fullscreen {
-      background: white;
-      color: black;
+    body {
+      font-family: -apple-system, 'Helvetica Neue', 'SF Pro Display', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      min-height: 100vh;
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 背景の装飾的な光源 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: -10%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(100, 160, 255, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      animation: float1 8s ease-in-out infinite;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -10%;
+      width: 50%;
+      height: 50%;
+      background: radial-gradient(circle, rgba(180, 100, 255, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+      animation: float2 10s ease-in-out infinite;
+    }
+
+    @keyframes float1 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(3%, 5%); }
+    }
+
+    @keyframes float2 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-3%, -5%); }
+    }
+
+    /* メインカード */
+    .card {
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 3rem 3.5rem;
+      width: min(90vw, 480px);
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      box-shadow:
+        0 8px 32px var(--glass-shadow),
+        0 1px 0 rgba(255,255,255,0.5) inset,
+        0 -1px 0 rgba(0,0,0,0.1) inset;
+      animation: fadeInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* カードの光沢ライン */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+      border-radius: 50%;
+    }
+
+    /* ラベル */
+    .label {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 1.5rem;
+    }
+
+    /* 時計本体 */
+    .clock-wrapper {
+      position: relative;
+      margin: 0.5rem 0 1.5rem;
+    }
+
+    #clock {
+      font-size: clamp(3rem, 12vw, 5.5rem);
+      font-weight: 100;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+      transition: font-size 0.3s ease;
+    }
+
+    #clock.mode-date {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 200;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+
+    /* 秒のパルスアニメーション */
+    #seconds-pulse {
+      display: inline-block;
+      animation: pulse 1s step-start infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* NICT同期インジケーター */
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      margin-bottom: 1.8rem;
+    }
+
+    .sync-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #5fde9a;
+      box-shadow: 0 0 6px rgba(95, 222, 154, 0.7);
+      animation: syncPulse 2.5s ease-in-out infinite;
+    }
+
+    .sync-dot.syncing {
+      background: #ffa940;
+      box-shadow: 0 0 6px rgba(255, 169, 64, 0.7);
+    }
+
+    .sync-dot.error {
+      background: #ff6b6b;
+      box-shadow: 0 0 6px rgba(255, 107, 107, 0.7);
+    }
+
+    @keyframes syncPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* セパレーター */
+    .separator {
+      width: 100%;
+      height: 1px;
+      background: var(--separator);
+      margin: 0.8rem 0 1.4rem;
+    }
+
+    /* フォーマット選択 */
+    .format-selector {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .fmt-btn {
+      flex: 1;
+      padding: 7px 6px;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      background: var(--btn-bg);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .fmt-btn:hover {
+      background: var(--btn-hover);
+      color: var(--text-primary);
+    }
+
+    .fmt-btn:active {
+      background: var(--btn-active);
+      transform: scale(0.95);
+    }
+
+    .fmt-btn.active {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.5);
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* フルスクリーンボタン */
+    .fs-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      padding: 10px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      background: var(--btn-bg);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .fs-btn:hover {
+      background: var(--btn-hover);
+      color: var(--text-primary);
+    }
+
+    .fs-btn:active {
+      transform: scale(0.98);
+    }
+
+    .fs-icon {
+      width: 14px;
+      height: 14px;
+      opacity: 0.7;
+    }
+
+    /* フルスクリーンモード */
+    body.is-fullscreen .card {
+      width: 100vw;
       height: 100vh;
-      padding: 0;
+      border-radius: 0;
+      border: none;
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
     }
 
-    body.fullscreen #clock {
-      font-size: 8vw;
-    }
-
-    body.fullscreen.format-hms #clock {
-      font-size: 14vw;
-    }
-
-    body.fullscreen h1,
-    body.fullscreen select,
-    body.fullscreen button,
-    body.fullscreen label {
+    body.is-fullscreen .card::before {
       display: none;
+    }
+
+    body.is-fullscreen .label,
+    body.is-fullscreen .sync-badge,
+    body.is-fullscreen .separator,
+    body.is-fullscreen .format-selector,
+    body.is-fullscreen .fs-btn {
+      display: none;
+    }
+
+    body.is-fullscreen #clock {
+      font-size: clamp(8vw, 15vw, 20vh);
+    }
+
+    body.is-fullscreen #clock.mode-date {
+      font-size: clamp(5vw, 8vw, 12vh);
+    }
+
+    /* フルスクリーン時のタップで終了ヒント */
+    body.is-fullscreen .fs-hint {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 0.1em;
+      animation: hintFade 4s ease forwards;
+    }
+
+    @keyframes hintFade {
+      0%, 60% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* スマートフォン向けレスポンシブ */
+    @media (max-width: 480px) {
+      .card {
+        padding: 2.2rem 2rem;
+        border-radius: 24px;
+      }
+
+      #clock {
+        font-size: clamp(2.8rem, 14vw, 4rem);
+      }
+
+      .fmt-btn {
+        font-size: 10px;
+        padding: 6px 4px;
+      }
+    }
+
+    /* 横向きスマートフォン */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .card {
+        padding: 1.5rem 3rem;
+        width: min(95vw, 600px);
+      }
+
+      #clock {
+        font-size: clamp(2.5rem, 10vw, 4rem);
+      }
     }
   </style>
 </head>
 <body>
-  <h1>NICT JST リアルタイム時計</h1>
+  <div class="card" id="card">
+    <div class="label">Japan Standard Time</div>
 
-  <label for="format">表示形式：</label>
-  <select id="format">
-    <option value="1">YYYY/MM/DD HH:mm:ss</option>
-    <option value="2">YYYY年M月D日 H時m分s秒</option>
-    <option value="3">HH:mm:ss</option>
-  </select>
+    <div class="clock-wrapper">
+      <div id="clock">--:--:--</div>
+    </div>
 
-  <br>
-  <button onclick="enterFullscreen()">フルスクリーン表示</button>
+    <div class="sync-badge">
+      <span class="sync-dot syncing" id="syncDot"></span>
+      <span id="syncLabel">NICT 同期中...</span>
+    </div>
 
-  <div id="clock">--:--:--</div>
+    <div class="separator"></div>
+
+    <div class="format-selector">
+      <button class="fmt-btn active" data-fmt="1" onclick="setFormat(1)">HH:mm:ss</button>
+      <button class="fmt-btn" data-fmt="2" onclick="setFormat(2)">日付 + 時刻</button>
+      <button class="fmt-btn" data-fmt="3" onclick="setFormat(3)">和暦表示</button>
+    </div>
+
+    <button class="fs-btn" onclick="enterFullscreen()">
+      <svg class="fs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+      </svg>
+      フルスクリーン
+    </button>
+  </div>
 
   <script>
     let jstOffset = 0;
+    let currentFormat = 1;
+    let syncOk = false;
+
+    const clockEl = document.getElementById('clock');
+    const syncDot = document.getElementById('syncDot');
+    const syncLabel = document.getElementById('syncLabel');
 
     async function syncWithNICT() {
       try {
-        const res = await fetch('https://ntp-a1.nict.go.jp/cgi-bin/json');
+        const before = Date.now();
+        const res = await fetch('https://ntp-a1.nict.go.jp/cgi-bin/json', { cache: 'no-store' });
+        const after = Date.now();
         const data = await res.json();
-        const serverTime = new Date(data.st).getTime();
-        const localTime = Date.now();
-        jstOffset = serverTime - localTime;
+        const rtt = after - before;
+        const serverTime = data.st * 1000;
+        jstOffset = serverTime - after + rtt / 2;
+        syncOk = true;
+        syncDot.className = 'sync-dot';
+        syncLabel.textContent = 'NICT JST 同期済み';
       } catch (e) {
-        console.error("NICT JST取得失敗:", e);
-        jstOffset = 0;
+        syncOk = false;
+        syncDot.className = 'sync-dot error';
+        syncLabel.textContent = 'ローカル時刻（同期失敗）';
       }
     }
 
-    function pad(n) {
-      return n.toString().padStart(2, '0');
-    }
+    function pad(n) { return n.toString().padStart(2, '0'); }
 
     function updateClock() {
       const now = new Date(Date.now() + jstOffset);
-      const format = document.getElementById('format').value;
-      const clock = document.getElementById('clock');
+      const Y = now.getFullYear();
+      const M = now.getMonth() + 1;
+      const D = now.getDate();
+      const H = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
 
-      let text = '';
-
-      if (format === '1') {
-        text = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-      } else if (format === '2') {
-        text = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours()}時${now.getMinutes()}分${now.getSeconds()}秒`;
-      } else if (format === '3') {
-        text = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      if (currentFormat === 1) {
+        clockEl.className = '';
+        clockEl.innerHTML = `${pad(H)}:${pad(m)}:<span id="seconds-pulse">${pad(s)}</span>`;
+      } else if (currentFormat === 2) {
+        clockEl.className = 'mode-date';
+        clockEl.innerHTML = `${Y}/${pad(M)}/${pad(D)}<br>${pad(H)}:${pad(m)}:<span id="seconds-pulse">${pad(s)}</span>`;
+      } else if (currentFormat === 3) {
+        clockEl.className = 'mode-date';
+        const era = getJapaneseEra(Y, M, D);
+        clockEl.innerHTML = `${era}<br>${pad(H)}時 ${pad(m)}分 <span id="seconds-pulse">${pad(s)}</span>秒`;
       }
+    }
 
-      clock.textContent = text;
+    function getJapaneseEra(y, m, d) {
+      const date = y * 10000 + m * 100 + d;
+      if (date >= 20190501) {
+        const ry = y - 2018;
+        return `令和${ry === 1 ? '元' : ry}年${m}月${d}日`;
+      } else if (date >= 19890108) {
+        const ry = y - 1988;
+        return `平成${ry === 1 ? '元' : ry}年${m}月${d}日`;
+      } else {
+        return `${y}年${m}月${d}日`;
+      }
+    }
 
-      document.body.classList.toggle('format-hms', format === '3');
+    function setFormat(fmt) {
+      currentFormat = fmt;
+      document.querySelectorAll('.fmt-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.fmt) === fmt);
+      });
+      updateClock();
     }
 
     function enterFullscreen() {
-      const elem = document.documentElement;
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
+      const el = document.documentElement;
+      const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (fn) fn.call(el);
+
+      // スマートフォン向けフォールバック（FullScreen API非対応の場合）
+      if (!fn) {
+        document.body.classList.add('is-fullscreen');
+        showFsHint();
       }
     }
 
+    function showFsHint() {
+      const existing = document.querySelector('.fs-hint');
+      if (existing) existing.remove();
+      const hint = document.createElement('div');
+      hint.className = 'fs-hint';
+      hint.textContent = 'タップで終了';
+      document.body.appendChild(hint);
+      document.body.addEventListener('click', exitFallbackFs, { once: true });
+    }
+
+    function exitFallbackFs() {
+      document.body.classList.remove('is-fullscreen');
+    }
+
     document.addEventListener('fullscreenchange', () => {
-      document.body.classList.toggle('fullscreen', !!document.fullscreenElement);
+      const isFs = !!document.fullscreenElement;
+      document.body.classList.toggle('is-fullscreen', isFs);
+      if (isFs) showFsHint();
     });
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('webkitfullscreenchange', () => {
+      const isFs = !!document.webkitFullscreenElement;
+      document.body.classList.toggle('is-fullscreen', isFs);
+      if (isFs) showFsHint();
+    });
+
+    // Escキーでフルスクリーン解除
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.body.classList.contains('is-fullscreen')) {
+        document.body.classList.remove('is-fullscreen');
+      }
+    });
+
+    // 初期化
+    (async () => {
       await syncWithNICT();
       updateClock();
       setInterval(updateClock, 1000);
-      document.getElementById('format').addEventListener('change', updateClock);
-    });
+      // 1時間ごとに再同期
+      setInterval(syncWithNICT, 3600000);
+    })();
   </script>
 </body>
 </html>
